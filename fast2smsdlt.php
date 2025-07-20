@@ -1,80 +1,65 @@
 <?php
+/*
+|---------------------------------------------------------------
+| Fast2SMS Gateway Controller
+|---------------------------------------------------------------
+| This file handles sending SMS via Fast2SMS API.
+| Replace placeholders with your actual Fast2SMS credentials.
+|
+| @author blrcoderbro
+| @provider Fast2SMS
+|---------------------------------------------------------------
+*/
 
-/**
- * FAST2SMS Gateway
- * @url https://www.fast2sms.com
- * @author PrithviS (@blrcoderbro)
- * DLT SMS Gateway
- * @version 1.1
- * @date 2025-03-07
- */
-
-define("FAST2SMS_GATEWAY", [
-    "apiUrl" => "https://www.fast2sms.com/dev/bulkV2",
-    "apiKey" => "YOUR_API_KEY", // Your FAST2SMS API key
-    "senderId" => "DLT_SENDER_ID", // Your DLT sender ID
-]);
-
-function sendSMS($phoneNumbers, $message, $route = 'dlt', $variablesValues = '', &$system)
+function fast2sms_send($to, $message, $api_key = '', $sender_id = '', $route = 'q', $country = '91')
 {
-    /**
-     * Implement sending here
-     * @return bool:true
-     * @return bool:false
-     */
+    // Fast2SMS API endpoint
+    $url = 'https://www.fast2sms.com/dev/bulkV2';
 
-    // Prepare the URL for the API request
-    $url = FAST2SMS_GATEWAY["apiUrl"] . "?authorization=" . FAST2SMS_GATEWAY["apiKey"] .
-        "&sender_id=" . FAST2SMS_GATEWAY["senderId"] .
-        "&message=" . urlencode($message) .
-        "&route=" . $route .
-        "&numbers=" . urlencode(implode(',', (array)$phoneNumbers));
+    // Prepare payload
+    $data = [
+        'sender_id'   => $sender_id, // Sender ID assigned by Fast2SMS
+        'message'     => $message,
+        'language'    => 'english',
+        'route'       => $route, // Default route
+        'numbers'     => $to, // Comma separated numbers
+    ];
 
-    if ($route === 'dlt') {
-        $url .= "&variables_values=" . urlencode($variablesValues);
+    // Setup headers
+    $headers = [
+        'authorization: ' . $api_key,
+        'Content-Type: application/json'
+    ];
+
+    // Initialize curl
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    // Execute & get response
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    // Handle response
+    if ($error) {
+        return [
+            'status' => 'error',
+            'message' => $error
+        ];
     } else {
-        $url .= "&language=english";
-    }
-
-    $curl = curl_init();
-
-    curl_setopt_array($curl, array(
-        CURLOPT_URL => $url,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => "",
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_SSL_VERIFYHOST => 0,
-        CURLOPT_SSL_VERIFYPEER => 0,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => "GET",
-        CURLOPT_HTTPHEADER => array(
-            "cache-control: no-cache"
-        ),
-    ));
-
-    $response = curl_exec($curl);
-    $err = curl_error($curl);
-
-    curl_close($curl);
-
-    if ($err) {
-        return false; // Return false on error
-    } else {
-        return true; // Return true on success
+        return [
+            'status' => 'success',
+            'response' => $response
+        ];
     }
 }
 
-function callback($request, &$system)
-{
-    /**
-     * Implement status callback here if gateway supports it
-     * @return array:MessageID
-     * @return array:Empty
-     */
-}
+// Example usage (replace with actual credentials and numbers)
+// $result = fast2sms_send('9876543210', 'Hello from Fast2SMS!', 'YOUR_API_KEY', 'SENDERID');
+// print_r($result);
 
-return [
-    "send" => "sendSMS",
-    "callback" => "callback"
-];
+?>
