@@ -6,7 +6,7 @@
 | This file is a boilerplate for sending SMS via Fast2SMS API.
 | It supports DLT, Quick, and OTP routes.
 |
-| @author Your Name
+| @author Prithvi S (@blrcoderbro)
 | @provider Fast2SMS
 |---------------------------------------------------------------
 */
